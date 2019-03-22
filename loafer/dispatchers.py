@@ -46,7 +46,7 @@ class LoaferDispatcher:
 
     async def _get_route_messages(self, route):
         if route.enabled:
-            messages = await route.provider.fetch_messages()
+            messages = await route.fetch_messages()
         else:
             logger.debug('skipped disabled route={}'.format(route))
             messages = []
