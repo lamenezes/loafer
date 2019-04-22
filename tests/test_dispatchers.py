@@ -12,14 +12,14 @@ from loafer.routes import Route
 
 @pytest.fixture
 def provider():
-    return CoroutineMock(fetch_messages=CoroutineMock(return_value=['message']),
-                         confirm_message=CoroutineMock())
+    return CoroutineMock(confirm_message=CoroutineMock())
 
 
 @pytest.fixture
 def route(provider):
     message_translator = Mock(translate=Mock(return_value={'content': 'message'}))
     route = AsyncMock(provider=provider, handler=Mock(),
+                      fetch_messages=CoroutineMock(return_value=['message']),
                       message_translator=message_translator,
                       spec=Route)
     return route
@@ -105,21 +105,22 @@ async def test_message_processing(route):
 
 @pytest.mark.asyncio
 async def test_dispatch_tasks(route):
-    route.provider.fetch_messages = CoroutineMock(return_value=['message'])
+    provider.fetch_messages = CoroutineMock(return_value=['message'])
     dispatcher = LoaferDispatcher([route])
+
     await dispatcher._dispatch_tasks()
 
-    assert route.provider.fetch_messages.called
+    assert route.fetch_messages.called
     assert route.provider.confirm_message.called
 
 
 @pytest.mark.asyncio
 async def test_dispatch_without_tasks(route, event_loop):
-    route.provider.fetch_messages = CoroutineMock(return_value=[])
+    route.fetch_messages = CoroutineMock(return_value=[])
     dispatcher = LoaferDispatcher([route])
     await dispatcher._dispatch_tasks()
 
-    assert route.provider.fetch_messages.called
+    assert route.fetch_messages.called
     assert route.provider.confirm_message.called is False
 
 
@@ -136,7 +137,7 @@ async def test_dispatch_providers(route, event_loop):
 
 @pytest.mark.asyncio
 async def test_dispatch_providers_with_error(route, event_loop):
-    route.provider.fetch_messages.side_effect = ValueError
+    route.fetch_messages.side_effect = ValueError
     dispatcher = LoaferDispatcher([route])
     with pytest.raises(ValueError):
         await dispatcher.dispatch_providers(forever=False)
